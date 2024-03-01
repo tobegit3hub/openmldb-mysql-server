@@ -1,5 +1,6 @@
 package com._4paradigm.openmldb;
 
+import cn.paxos.mysql.MySqlListener;
 import cn.paxos.mysql.engine.QueryResultColumn;
 import com._4paradigm.openmldb.common.Pair;
 import java.util.ArrayList;
@@ -9,6 +10,8 @@ import java.util.Map;
 
 public class MockResult {
   public static Map<String, Pair<List<QueryResultColumn>, List<List<String>>>> mockResults =
+      new HashMap<>();
+  public static Map<String, Pair<List<QueryResultColumn>, List<List<String>>>> mockPatternResults =
       new HashMap<>();
 
   static {
@@ -34,13 +37,13 @@ public class MockResult {
     rows = new ArrayList<>();
     mockResults.put(query, new Pair<>(columns, rows));
 
-    query = "select connection_id()";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("CONNECTION_ID()", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("1");
-    mockResults.put(query, new Pair<>(columns, rows));
+    //    query = "select connection_id()";
+    //    columns = new ArrayList<>();
+    //    columns.add(new QueryResultColumn("CONNECTION_ID()", "VARCHAR(255)"));
+    //    rows = new ArrayList<>();
+    //    row = new ArrayList<>();
+    //    row.add("1");
+    //    mockResults.put(query, new Pair<>(columns, rows));
 
     query = "show session status like 'ssl_cipher'";
     columns = new ArrayList<>();
@@ -70,7 +73,7 @@ public class MockResult {
     rows = new ArrayList<>();
     row = new ArrayList<>();
     row.add("version_comment");
-    row.add("OpenMLDB");
+    row.add("");
     mockResults.put(query, new Pair<>(columns, rows));
 
     query = "show session variables like 'version'";
@@ -80,7 +83,7 @@ public class MockResult {
     rows = new ArrayList<>();
     row = new ArrayList<>();
     row.add("version");
-    row.add("8.0.29");
+    row.add(MySqlListener.VERSION);
     mockResults.put(query, new Pair<>(columns, rows));
 
     query = "show plugins";
@@ -117,5 +120,41 @@ public class MockResult {
     }
     rows = new ArrayList<>();
     mockResults.put(query, new Pair<>(columns, rows));
+
+    query = "show variables like 'skip_show_database'";
+    columns = new ArrayList<>();
+    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
+    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
+    rows = new ArrayList<>();
+    row = new ArrayList<>();
+    row.add("skip_show_database");
+    row.add("OFF");
+    mockResults.put(query, new Pair<>(columns, rows));
+
+    query = "show variables like 'character_set_database'";
+    columns = new ArrayList<>();
+    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
+    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
+    rows = new ArrayList<>();
+    row = new ArrayList<>();
+    row.add("character_set_database");
+    row.add("utf8mb4");
+    mockResults.put(query, new Pair<>(columns, rows));
+
+    String pattern = "(?i)SELECT .+ FROM .*information_schema.*\\..*routines.* WHERE .*routine_schema.* =.*";
+    // SPECIFIC_NAME, ROUTINE_CATALOG, ROUTINE_SCHEMA, ROUTINE_NAME, ROUTINE_TYPE, DATA_TYPE,
+    // CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE,
+    // DATETIME_PRECISION, CHARACTER_SET_NAME, COLLATION_NAME, DTD_IDENTIFIER, ROUTINE_BODY,
+    // ROUTINE_DEFINITION, EXTERNAL_NAME, EXTERNAL_LANGUAGE, PARAMETER_STYLE, IS_DETERMINISTIC,
+    // SQL_DATA_ACCESS, SQL_PATH, SECURITY_TYPE, CREATED, LAST_ALTERED, SQL_MODE, ROUTINE_COMMENT,
+    // DEFINER, CHARACTER_SET_CLIENT, COLLATION_CONNECTION, DATABASE_COLLATION
+    columns = new ArrayList<>();
+    columnNameStr =
+        "SPECIFIC_NAME, ROUTINE_CATALOG, ROUTINE_SCHEMA, ROUTINE_NAME, ROUTINE_TYPE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE, DATETIME_PRECISION, CHARACTER_SET_NAME, COLLATION_NAME, DTD_IDENTIFIER, ROUTINE_BODY, ROUTINE_DEFINITION, EXTERNAL_NAME, EXTERNAL_LANGUAGE, PARAMETER_STYLE, IS_DETERMINISTIC, SQL_DATA_ACCESS, SQL_PATH, SECURITY_TYPE, CREATED, LAST_ALTERED, SQL_MODE, ROUTINE_COMMENT, DEFINER, CHARACTER_SET_CLIENT, COLLATION_CONNECTION, DATABASE_COLLATION";
+    for (String columnName : columnNameStr.split(", ")) {
+      columns.add(new QueryResultColumn(columnName, "VARCHAR(255)"));
+    }
+    rows = new ArrayList<>();
+    mockPatternResults.put(pattern, new Pair<>(columns, rows));
   }
 }

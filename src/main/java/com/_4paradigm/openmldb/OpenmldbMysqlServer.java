@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class OpenmldbMysqlServer {
   public SqlClusterExecutor sqlExecutor;
@@ -64,9 +65,26 @@ public class OpenmldbMysqlServer {
                 }
                 resultSetWriter.finish();
               } else {
+                for (String patternStr : MockResult.mockPatternResults.keySet()) {
+                  Pattern pattern = Pattern.compile(patternStr);
+                  if (pattern.matcher(sql).matches()) {
+                    Pair<List<QueryResultColumn>, List<List<String>>> pair =
+                        MockResult.mockPatternResults.get(patternStr);
+                    resultSetWriter.writeColumns(pair.getKey());
+                    for (List<String> row : pair.getValue()) {
+                      resultSetWriter.writeRow(row);
+                    }
+                    resultSetWriter.finish();
+                    return;
+                  }
+                }
+
                 java.sql.Statement stmt = sqlExecutor.getStatement();
 
                 stmt.execute("SET @@execute_mode='online'");
+                if (sql.equalsIgnoreCase("SHOW FULL TABLES")) {
+                  sql = "SHOW TABLES";
+                }
                 stmt.execute(sql);
 
                 if (sql.toLowerCase().startsWith("select")
