@@ -40,6 +40,7 @@ import jdk.net.ExtendedSocketOptions;
 public class MySqlListener implements AutoCloseable {
 
   public static final String VERSION = "8.0.29";
+  public static final String VERSION_COMMENT = "";
   private static final Pattern SETTINGS_PATTERN =
       Pattern.compile("@@([\\w.]+)(?:\\sAS\\s)?(\\w+)?");
   private final SqlEngine sqlEngine;
@@ -490,7 +491,7 @@ public class MySqlListener implements AutoCloseable {
           columnDefinitions.add(
               newColumnDefinition(
                   ++sequenceId, fieldName, systemVariable, ColumnType.MYSQL_TYPE_VAR_STRING, 0));
-          values.add("");
+          values.add(VERSION_COMMENT);
           break;
         case "collation_connection":
           columnDefinitions.add(

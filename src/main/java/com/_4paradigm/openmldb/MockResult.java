@@ -14,15 +14,43 @@ public class MockResult {
   public static Map<String, Pair<List<QueryResultColumn>, List<List<String>>>> mockPatternResults =
       new HashMap<>();
 
+  public static Map<String, String> mockVariables = new HashMap<>();
+
+  public static Map<String, String> mockSessionVariables = new HashMap<>();
+
   static {
-    String query = "show character set where charset = 'utf8mb4'";
-    List<QueryResultColumn> columns = new ArrayList<>();
+    String query;
+    List<QueryResultColumn> columns;
+    List<List<String>> rows;
+    List<String> row;
+
+    mockVariables.put("character_set_database", "utf8mb4");
+    mockVariables.put("collation_database", "utf8mb4_0900_ai_ci");
+    mockVariables.put("default_storage_engine", "InnoDB");
+    mockVariables.put("skip_show_database", "OFF");
+    mockVariables.put("version", MySqlListener.VERSION);
+    mockVariables.put("version_comment", MySqlListener.VERSION_COMMENT);
+    for (String variable : MockResult.mockVariables.keySet()) {
+      query = "show variables like '" + variable.toLowerCase() + "'";
+      columns = new ArrayList<>();
+      columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
+      columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
+      rows = new ArrayList<>();
+      row = new ArrayList<>();
+      row.add(variable);
+      row.add(mockVariables.get(variable));
+      rows.add(row);
+      mockResults.put(query, new Pair<>(columns, rows));
+    }
+
+    query = "show character set where charset = 'utf8mb4'";
+    columns = new ArrayList<>();
     columns.add(new QueryResultColumn("Charset", "VARCHAR(255)"));
     columns.add(new QueryResultColumn("Description", "VARCHAR(255)"));
     columns.add(new QueryResultColumn("Default collation", "VARCHAR(255)"));
     columns.add(new QueryResultColumn("Maxlen", "VARCHAR(255)"));
-    List<List<String>> rows = new ArrayList<>();
-    List<String> row = new ArrayList<>();
+    rows = new ArrayList<>();
+    row = new ArrayList<>();
     row.add("utf8mb4");
     row.add("UTF-8 Unicode");
     row.add("utf8mb4_0900_ai_ci");
@@ -37,58 +65,24 @@ public class MockResult {
     rows = new ArrayList<>();
     mockResults.put(query, new Pair<>(columns, rows));
 
-    //    query = "select connection_id()";
-    //    columns = new ArrayList<>();
-    //    columns.add(new QueryResultColumn("CONNECTION_ID()", "VARCHAR(255)"));
-    //    rows = new ArrayList<>();
-    //    row = new ArrayList<>();
-    //    row.add("1");
-    //    mockResults.put(query, new Pair<>(columns, rows));
-
-    query = "show session status like 'ssl_cipher'";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("Ssl_cipher");
-    row.add("TLS_AES_256_GCM_SHA384");
-    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
-
-    query = "show session variables like 'sql_mode'";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("sql_mode");
-    row.add(
+    mockSessionVariables.put(
+        "sql_mode",
         "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION");
-    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
-
-    query = "show session variables like 'version_comment'";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("version_comment");
-    row.add("");
-    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
-
-    query = "show session variables like 'version'";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("version");
-    row.add(MySqlListener.VERSION);
-    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
+    mockSessionVariables.put("Ssl_cipher", "TLS_AES_256_GCM_SHA384");
+    mockSessionVariables.put("version_comment", MySqlListener.VERSION_COMMENT);
+    mockSessionVariables.put("version", MySqlListener.VERSION);
+    for (String sessionVariable : MockResult.mockSessionVariables.keySet()) {
+      query = "show session status like '" + sessionVariable.toLowerCase() + "'";
+      columns = new ArrayList<>();
+      columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
+      columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
+      rows = new ArrayList<>();
+      row = new ArrayList<>();
+      row.add(sessionVariable);
+      row.add(mockSessionVariables.get(sessionVariable));
+      rows.add(row);
+      mockResults.put(query, new Pair<>(columns, rows));
+    }
 
     query = "show plugins";
     // # Name, Status, Type, Library, License
@@ -125,28 +119,6 @@ public class MockResult {
     rows = new ArrayList<>();
     mockResults.put(query, new Pair<>(columns, rows));
 
-    query = "show variables like 'skip_show_database'";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("skip_show_database");
-    row.add("OFF");
-    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
-
-    query = "show variables like 'character_set_database'";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("character_set_database");
-    row.add("utf8mb4");
-    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
-
     query = "show tables in information_schema like 'engines'";
     // # Tables_in_information_schema (ENGINES)
     // ENGINES
@@ -172,65 +144,34 @@ public class MockResult {
     columns.add(new QueryResultColumn("Engine", "VARCHAR(255)"));
     columns.add(new QueryResultColumn("Support", "VARCHAR(255)"));
     rows = new ArrayList<>();
-
     //    row = new ArrayList<>();
     //    row.add("ARCHIVE");
     //    row.add("YES");
     //    rows.add(row);
-
     //    row = new ArrayList<>();
     //    row.add("BLACKHOLE");
     //    row.add("YES");
     //    rows.add(row);
-
     //    row = new ArrayList<>();
     //    row.add("MRG_MYISAM");
     //    row.add("YES");
     //    rows.add(row);
-
     //    row = new ArrayList<>();
     //    row.add("MyISAM");
     //    row.add("YES");
     //    rows.add(row);
-
     row = new ArrayList<>();
     row.add("InnoDB");
     row.add("DEFAULT");
     rows.add(row);
-
     //    row = new ArrayList<>();
     //    row.add("MEMORY");
     //    row.add("YES");
     //    rows.add(row);
-
     //    row = new ArrayList<>();
     //    row.add("CSV");
     //    row.add("YES");
     //    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
-
-    query = "show variables like 'default_storage_engine'";
-    // # Variable_name, Value
-    // default_storage_engine, InnoDB
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("default_storage_engine");
-    row.add("InnoDB");
-    rows.add(row);
-    mockResults.put(query, new Pair<>(columns, rows));
-
-    query = "show variables like 'collation_database'";
-    columns = new ArrayList<>();
-    columns.add(new QueryResultColumn("Variable_name", "VARCHAR(255)"));
-    columns.add(new QueryResultColumn("Value", "VARCHAR(255)"));
-    rows = new ArrayList<>();
-    row = new ArrayList<>();
-    row.add("collation_database");
-    row.add("utf8mb4_0900_ai_ci");
-    rows.add(row);
     mockResults.put(query, new Pair<>(columns, rows));
 
     query = "select * from `information_schema`.`character_sets` order by `character_set_name` asc";
