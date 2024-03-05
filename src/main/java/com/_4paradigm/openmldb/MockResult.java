@@ -273,5 +273,18 @@ public class MockResult {
     }
     rows = new ArrayList<>();
     mockPatternResults.put(pattern, new Pair<>(columns, rows));
+
+    pattern = "(?i)SHOW INDEX FROM .*";
+    // # Table, Non_unique, Key_name, Seq_in_index, Column_name, Collation, Cardinality, Sub_part,
+    // Packed, Null, Index_type, Comment, Index_comment, Visible, Expression
+    // t_exam_paper, 0, PRIMARY, 1, id, A, 0, , , , BTREE, , , YES,
+    columns = new ArrayList<>();
+    columnNameStr =
+        "Table, Non_unique, Key_name, Seq_in_index, Column_name, Collation, Cardinality, Sub_part, Packed, Null, Index_type, Comment, Index_comment, Visible, Expression";
+    for (String columnName : columnNameStr.split(", ")) {
+      columns.add(new QueryResultColumn(columnName, "VARCHAR(255)"));
+    }
+    rows = new ArrayList<>();
+    mockPatternResults.put(pattern, new Pair<>(columns, rows));
   }
 }
