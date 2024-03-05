@@ -51,3 +51,9 @@ INSERT INTO demo_table2(c1, c2, c3, c4, c5, c6) VALUES('01', 1, 1, 1.0, 1.0, 170
 select * from demo_table2;
 SELECT c1, c2, sum(c3) OVER w1 AS w1_c3_sum FROM demo_table2 WINDOW w1 AS (PARTITION BY demo_table2.c1 ORDER BY demo_table2.c6 ROWS BETWEEN 2 PRECEDING AND CURRENT ROW);
 ```
+
+## type testcase
+```sql
+CREATE TABLE demo_table1(c1 int, c2 int32, c3 smallint, c4 int16, c5 bigint, c6 int64, c7 float, c8 double, c9 timestamp, c10 date, c11 bool, c12 string, c13 varchar);
+select * from demo_table1;
+```
