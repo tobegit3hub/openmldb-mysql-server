@@ -12,6 +12,7 @@ import com._4paradigm.openmldb.sdk.Schema;
 import com._4paradigm.openmldb.sdk.SdkOption;
 import com._4paradigm.openmldb.sdk.SqlException;
 import com._4paradigm.openmldb.sdk.impl.SqlClusterExecutor;
+import com.google.common.base.Strings;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -121,6 +122,9 @@ public class OpenmldbMysqlServer {
 
                 java.sql.Statement stmt = sqlClusterExecutorMap.get(userName).getStatement();
 
+                if (!Strings.isNullOrEmpty(database)) {
+                  stmt.execute("use " + database);
+                }
                 stmt.execute("SET @@execute_mode='online'");
                 if (sql.equalsIgnoreCase("SHOW FULL TABLES")) {
                   sql = "SHOW TABLES";
