@@ -156,18 +156,13 @@ public class OpenmldbMysqlServer {
 
     // mysql workbench will check some variables
     if (sql.equalsIgnoreCase("show variables")) {
-      // version, 8.0.29
-      // version_comment, MySQL Community Server - GPL
-      List<String> row = new ArrayList<>();
-      row.add("version");
-      // mocked version
-      row.add("8.0.29");
-      resultSetWriter.writeRow(row);
-
-      row = new ArrayList<>();
-      row.add("version_comment");
-      row.add("OpenMLDB");
-      resultSetWriter.writeRow(row);
+      List<String> row;
+      for (String variable : MockResult.mockVariables.keySet()) {
+        row = new ArrayList<>();
+        row.add(variable);
+        row.add(MockResult.mockVariables.get(variable));
+        resultSetWriter.writeRow(row);
+      }
     }
 
     // Finish the response
