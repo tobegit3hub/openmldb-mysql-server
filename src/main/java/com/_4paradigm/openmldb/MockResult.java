@@ -94,6 +94,15 @@ public class MockResult {
     columns.add(new QueryResultColumn("Library", "VARCHAR(255)"));
     columns.add(new QueryResultColumn("License", "VARCHAR(255)"));
     rows = new ArrayList<>();
+    // # Name, Status, Type, Library, License
+    // mysql_native_password, ACTIVE, AUTHENTICATION, , GPL
+    row = new ArrayList<>();
+    row.add("mysql_native_password");
+    row.add("ACTIVE");
+    row.add("AUTHENTICATION");
+    row.add("");
+    row.add("GPL");
+    rows.add(row);
     mockResults.put(query, new Pair<>(columns, rows));
 
     query = "show slave status";
