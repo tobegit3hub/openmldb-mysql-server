@@ -19,7 +19,7 @@ package cn.paxos.mysql.codec;
 /**
  * https://dev.mysql.com/doc/internals/en/com-query-response.html#column-type
  *
- * <p>https://dev.mysql.com/doc/dev/mysql-server/latest/namespaceclassic__protocol_1_1field__type.html#a1a187706992c835b40e8f1cf44d7b1d5
+ * https://dev.mysql.com/doc/dev/mysql-server/latest/namespaceclassic__protocol_1_1field__type.html#a1a187706992c835b40e8f1cf44d7b1d5
  */
 public enum ColumnType {
   MYSQL_TYPE_DECIMAL(0x00),
