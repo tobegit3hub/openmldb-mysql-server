@@ -216,6 +216,26 @@ public class MySqlListener implements AutoCloseable {
               for (QueryResultColumn column : columns) {
                 ColumnType columnType;
                 switch (column.getType()) {
+                  case "TINYINT(1)":
+                  case "TINYINT":
+                    columnType = ColumnType.MYSQL_TYPE_TINY;
+                    break;
+                  case "INT":
+                  case "BIGINT":
+                    columnType = ColumnType.MYSQL_TYPE_LONG;
+                    break;
+                  case "FLOAT":
+                    columnType = ColumnType.MYSQL_TYPE_FLOAT;
+                    break;
+                  case "DOUBLE":
+                    columnType = ColumnType.MYSQL_TYPE_DOUBLE;
+                    break;
+                  case "DATE":
+                    columnType = ColumnType.MYSQL_TYPE_DATE;
+                    break;
+                  case "TIMESTAMP":
+                    columnType = ColumnType.MYSQL_TYPE_TIMESTAMP;
+                    break;
                   default:
                     columnType = ColumnType.MYSQL_TYPE_VAR_STRING;
                     break;
