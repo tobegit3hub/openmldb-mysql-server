@@ -4,6 +4,8 @@ import cn.paxos.mysql.MySqlListener;
 import cn.paxos.mysql.ResultSetWriter;
 import cn.paxos.mysql.engine.QueryResultColumn;
 import cn.paxos.mysql.engine.SqlEngine;
+import cn.paxos.mysql.util.SHAUtils;
+import cn.paxos.mysql.util.Utils;
 import com._4paradigm.openmldb.common.Pair;
 import com._4paradigm.openmldb.jdbc.SQLResultSet;
 import com._4paradigm.openmldb.sdk.Schema;
@@ -13,6 +15,7 @@ import com._4paradigm.openmldb.sdk.impl.SqlClusterExecutor;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -35,7 +38,26 @@ public class OpenmldbMysqlServer {
           @Override
           public void authenticate(
               String database, String userName, byte[] scramble411, byte[] authSeed)
-              throws IOException {}
+              throws IOException {
+            // mocked username
+            String validUser = "root";
+            if (!userName.equals(validUser)) {
+              throw new IOException(
+                  new IllegalAccessException(
+                      "Authentication failed: User " + userName + " is not allowed to connect"));
+            }
+            // mocked password
+            String validPassword = "4pdadmin";
+
+            String validPasswordSha1 = SHAUtils.SHA(validPassword, SHAUtils.SHA_1);
+            String validScramble411WithSeed20 = Utils.scramble411(validPasswordSha1, authSeed);
+
+            if (!Utils.compareDigest(
+                validScramble411WithSeed20, Base64.getEncoder().encodeToString(scramble411))) {
+              throw new IOException(
+                  new IllegalAccessException("Authentication failed: Validation failed"));
+            }
+          }
 
           @Override
           public void query(
