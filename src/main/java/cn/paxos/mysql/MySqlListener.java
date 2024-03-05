@@ -150,7 +150,8 @@ public class MySqlListener implements AutoCloseable {
                 response.getDatabase(), response.getUsername(), scramble411));
 
     try {
-      sqlEngine.authenticate(response.getDatabase(), response.getUsername(), scramble411, salt);
+      sqlEngine.authenticate(
+          connectionId, response.getDatabase(), response.getUsername(), scramble411, salt);
     } catch (IOException e) {
       System.out.println(
           "[mysql-protocol] Sql query exception: " + response.getUsername() + ", " + remoteAddr);
@@ -198,7 +199,8 @@ public class MySqlListener implements AutoCloseable {
 
     if (isServerSettingsQuery(queryString)) {
       sendSettingsResponse(ctx, query, remoteAddr);
-    } else if (queryString.replaceAll("/\\*.*\\*/", "").toLowerCase().trim().startsWith("set ")) {
+    } else if (queryString.replaceAll("/\\*.*\\*/", "").toLowerCase().trim().startsWith("set ")
+            && ! queryString.replaceAll("/\\*.*\\*/", "").toLowerCase().trim().startsWith("set @@execute_mode=")) {
       // ignore SET command
       ctx.writeAndFlush(OkResponse.builder().sequenceId(query.getSequenceId() + 1).build());
     } else {
@@ -279,7 +281,8 @@ public class MySqlListener implements AutoCloseable {
             }
           };
       try {
-        sqlEngine.query(resultSetWriter, database, userName, scramble411, salt, queryString);
+        sqlEngine.query(
+            connectionId, resultSetWriter, database, userName, scramble411, salt, queryString);
       } catch (IOException e) {
         System.out.println("[mysql-protocol] Sql query exception: " + userName + ", " + remoteAddr);
         e.printStackTrace();
@@ -605,6 +608,7 @@ public class MySqlListener implements AutoCloseable {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
       System.out.println("[mysql-protocol] Server channel inactive: " + new Date());
+      sqlEngine.close(connectionId);
     }
 
     @Override
@@ -645,6 +649,7 @@ public class MySqlListener implements AutoCloseable {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
       cause.printStackTrace();
       ctx.close();
+      sqlEngine.close(connectionId);
     }
   }
 }

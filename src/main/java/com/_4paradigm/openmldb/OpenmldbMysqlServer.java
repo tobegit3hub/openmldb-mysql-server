@@ -20,11 +20,17 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class OpenmldbMysqlServer {
-  private Map<String, SqlClusterExecutor> sqlClusterExecutorMap = new ConcurrentHashMap<>();
-  private Map<String, SdkOption> sdkOptionMap = new ConcurrentHashMap<>();
+  private static Pattern setExecuteModePattern =
+      Pattern.compile("(?i)SET\\s+@@execute_mode\\s*=\\s*'(.*)'");
+  private final Map<Integer, Map<String, SqlClusterExecutor>> sqlClusterExecutorMap =
+      new ConcurrentHashMap<>();
+  private final Map<Integer, Map<String, Boolean>> onlineExecuteModeEnabledMap =
+      new ConcurrentHashMap<>();
+  private final Map<Integer, Map<String, SdkOption>> sdkOptionMap = new ConcurrentHashMap<>();
 
   public OpenmldbMysqlServer(int port, String zkCluster, String zkPath) {
     new MySqlListener(
@@ -33,7 +39,11 @@ public class OpenmldbMysqlServer {
         new SqlEngine() {
           @Override
           public void authenticate(
-              String database, String userName, byte[] scramble411, byte[] authSeed)
+              int connectionId,
+              String database,
+              String userName,
+              byte[] scramble411,
+              byte[] authSeed)
               throws IOException {
             // mocked username
             String validUser = "root";
@@ -55,9 +65,9 @@ public class OpenmldbMysqlServer {
             }
 
             try {
-              if (!sqlClusterExecutorMap.containsKey(userName)) {
+              if (!sqlClusterExecutorMap.containsKey(connectionId)) {
                 synchronized (this) {
-                  if (!sqlClusterExecutorMap.containsKey(userName)) {
+                  if (!sqlClusterExecutorMap.containsKey(connectionId)) {
                     SdkOption option = new SdkOption();
                     option.setZkCluster(zkCluster);
                     option.setZkPath(zkPath);
@@ -65,9 +75,35 @@ public class OpenmldbMysqlServer {
                     option.setRequestTimeout(60000);
                     option.setUser(userName);
                     option.setPassword(validPassword);
-                    sdkOptionMap.put(userName, option);
+                    Map<String, SdkOption> tmpMap = new ConcurrentHashMap<>();
+                    tmpMap.put(userName, option);
+                    sdkOptionMap.put(connectionId, tmpMap);
+
+                    Map<String, Boolean> tmpMap2 = new ConcurrentHashMap<>();
+                    onlineExecuteModeEnabledMap.put(connectionId, tmpMap2);
+
                     SqlClusterExecutor sqlExecutor = new SqlClusterExecutor(option);
-                    sqlClusterExecutorMap.put(userName, sqlExecutor);
+                    Map<String, SqlClusterExecutor> tmpMap3 = new ConcurrentHashMap<>();
+                    tmpMap3.put(userName, sqlExecutor);
+                    sqlClusterExecutorMap.put(connectionId, tmpMap3);
+                  }
+                }
+              }
+
+              if (!sqlClusterExecutorMap.get(connectionId).containsKey(userName)) {
+                synchronized (this) {
+                  if (!sqlClusterExecutorMap.get(connectionId).containsKey(userName)) {
+                    SdkOption option = new SdkOption();
+                    option.setZkCluster(zkCluster);
+                    option.setZkPath(zkPath);
+                    option.setSessionTimeout(10000);
+                    option.setRequestTimeout(60000);
+                    option.setUser(userName);
+                    option.setPassword(validPassword);
+                    sdkOptionMap.get(connectionId).put(userName, option);
+
+                    SqlClusterExecutor sqlExecutor = new SqlClusterExecutor(option);
+                    sqlClusterExecutorMap.get(connectionId).put(userName, sqlExecutor);
                   }
                 }
               }
@@ -78,6 +114,7 @@ public class OpenmldbMysqlServer {
 
           @Override
           public void query(
+              int connectionId,
               ResultSetWriter resultSetWriter,
               String database,
               String userName,
@@ -94,7 +131,7 @@ public class OpenmldbMysqlServer {
                     + ", SQL: "
                     + sql);
 
-            this.authenticate(database, userName, scramble411, authSeed);
+            this.authenticate(connectionId, database, userName, scramble411, authSeed);
 
             try {
               if (MockResult.mockResults.containsKey(sql.toLowerCase())) {
@@ -103,6 +140,23 @@ public class OpenmldbMysqlServer {
                 resultSetWriter.writeColumns(pair.getKey());
                 for (List<String> row : pair.getValue()) {
                   resultSetWriter.writeRow(row);
+                }
+                resultSetWriter.finish();
+              } else if (setExecuteModePattern.matcher(sql).matches()) {
+                List<QueryResultColumn> columns = new ArrayList<>();
+                columns.add(new QueryResultColumn("execute_mode", "VARCHAR(255)"));
+                resultSetWriter.writeColumns(columns);
+
+                Matcher matcher = setExecuteModePattern.matcher(sql);
+                if (matcher.find()) {
+                  String executeMode = matcher.group(1);
+                  List<String> row = new ArrayList<>();
+                  row.add(executeMode);
+                  resultSetWriter.writeRow(row);
+
+                  if (executeMode.trim().equalsIgnoreCase("online")) {
+                    onlineExecuteModeEnabledMap.get(connectionId).put(userName, Boolean.TRUE);
+                  }
                 }
                 resultSetWriter.finish();
               } else {
@@ -120,12 +174,19 @@ public class OpenmldbMysqlServer {
                   }
                 }
 
-                java.sql.Statement stmt = sqlClusterExecutorMap.get(userName).getStatement();
+                java.sql.Statement stmt =
+                    sqlClusterExecutorMap.get(connectionId).get(userName).getStatement();
 
                 if (!Strings.isNullOrEmpty(database)) {
                   stmt.execute("use " + database);
                 }
-                stmt.execute("SET @@execute_mode='online'");
+                if (onlineExecuteModeEnabledMap
+                    .get(connectionId)
+                    .getOrDefault(userName, Boolean.FALSE)) {
+                  stmt.execute("SET @@execute_mode='online'");
+                } else {
+                  stmt.execute("SET @@execute_mode='offline'");
+                }
                 if (sql.equalsIgnoreCase("SHOW FULL TABLES")) {
                   sql = "SHOW TABLES";
                 }
@@ -146,6 +207,13 @@ public class OpenmldbMysqlServer {
               e.printStackTrace();
               throw new IOException(e.getMessage());
             }
+          }
+
+          @Override
+          public void close(int connectionId) {
+            sdkOptionMap.remove(connectionId);
+            onlineExecuteModeEnabledMap.remove(connectionId);
+            sqlClusterExecutorMap.remove(connectionId);
           }
         });
   }
