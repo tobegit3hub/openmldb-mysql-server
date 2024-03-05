@@ -221,8 +221,10 @@ public class MySqlListener implements AutoCloseable {
                     columnType = ColumnType.MYSQL_TYPE_TINY;
                     break;
                   case "INT":
-                  case "BIGINT":
                     columnType = ColumnType.MYSQL_TYPE_LONG;
+                    break;
+                  case "BIGINT":
+                    columnType = ColumnType.MYSQL_TYPE_LONGLONG;
                     break;
                   case "FLOAT":
                     columnType = ColumnType.MYSQL_TYPE_FLOAT;
