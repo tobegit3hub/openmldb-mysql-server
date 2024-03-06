@@ -20,11 +20,19 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class OpenmldbMysqlServer {
   private final Map<Integer, SqlClusterExecutor> sqlClusterExecutorMap = new ConcurrentHashMap<>();
-  private final Map<Integer, SdkOption> sdkOptionMap = new ConcurrentHashMap<>();
+
+  private final Pattern showFullColumnsPattern =
+      Pattern.compile("(?i)SHOW FULL COLUMNS FROM `(.+)` FROM `(.+)`");
+
+  //  private final Pattern crateTableResultPattern =
+  //      Pattern.compile(
+  //          "(?i)(?s)(?m)CREATE TABLE `(.+)` \\([\\s\\r\\n]+(?:`(.+)` (.+),[\\s\\r\\n]+)+.*\\)
+  // OPTIONS .*");
 
   public OpenmldbMysqlServer(int port, String zkCluster, String zkPath) {
     new MySqlListener(
@@ -69,8 +77,6 @@ public class OpenmldbMysqlServer {
                     option.setRequestTimeout(60000);
                     option.setUser(userName);
                     option.setPassword(validPassword);
-                    sdkOptionMap.put(connectionId, option);
-
                     SqlClusterExecutor sqlExecutor = new SqlClusterExecutor(option);
                     try {
                       System.out.println(
@@ -140,6 +146,49 @@ public class OpenmldbMysqlServer {
 
                 java.sql.Statement stmt = sqlClusterExecutorMap.get(connectionId).getStatement();
 
+                Matcher showFullColumnsMatcher = showFullColumnsPattern.matcher(sql);
+                if (showFullColumnsMatcher.matches()) {
+                  String tableName = showFullColumnsMatcher.group(1);
+                  String databaseName = showFullColumnsMatcher.group(2);
+                  String selectStarSql = "select * from `" + databaseName + "`.`" + tableName + "`";
+                  stmt.execute(selectStarSql);
+
+                  List<QueryResultColumn> columns = new ArrayList<>();
+                  // # Field, Type, Collation, Null, Key, Default, Extra, Privileges, Comment
+                  // id, int, , NO, PRI, , auto_increment, select,insert,update,references,
+                  columns.add(new QueryResultColumn("Field", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Type", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Collation", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Null", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Key", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Default", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Extra", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Privileges", "VARCHAR(255)"));
+                  columns.add(new QueryResultColumn("Comment", "VARCHAR(255)"));
+                  resultSetWriter.writeColumns(columns);
+
+                  SQLResultSet resultSet = (SQLResultSet) stmt.getResultSet();
+                  Schema schema = resultSet.GetInternalSchema();
+                  // int columnCount = schema.GetColumnCnt();
+                  int columnCount = schema.getColumnList().size();
+                  // Add schema
+                  for (int i = 0; i < columnCount; i++) {
+                    List<String> row = new ArrayList<>();
+                    row.add(schema.getColumnName(i));
+                    row.add(TypeUtil.openmldbTypeToMysqlTypeString(schema.getColumnType(i)));
+                    row.add("");
+                    row.add("");
+                    row.add("");
+                    row.add("");
+                    row.add("");
+                    row.add("");
+                    row.add("");
+                    resultSetWriter.writeRow(row);
+                  }
+                  resultSetWriter.finish();
+                  return;
+                }
+
                 if (!Strings.isNullOrEmpty(database)) {
                   stmt.execute("use " + database);
                 }
@@ -167,7 +216,6 @@ public class OpenmldbMysqlServer {
 
           @Override
           public void close(int connectionId) {
-            sdkOptionMap.remove(connectionId);
             sqlClusterExecutorMap.remove(connectionId);
           }
         });
