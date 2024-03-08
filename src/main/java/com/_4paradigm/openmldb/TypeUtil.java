@@ -138,7 +138,10 @@ public class TypeUtil {
   public static String getResultSetStringColumn(SQLResultSet resultSet, int i, DataType type)
       throws SQLException {
     if (type.equals(DataType.kTypeBool)) {
-      return String.valueOf(resultSet.getBoolean(i));
+      if (resultSet.getBoolean(i)) {
+        return "1";
+      }
+      return "0";
     } else if (type.equals(DataType.kTypeInt16)) {
       return String.valueOf(resultSet.getShort(i));
     } else if (type.equals(DataType.kTypeInt32)) {

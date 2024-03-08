@@ -200,8 +200,14 @@ public class MySqlListener implements AutoCloseable {
     if (isServerSettingsQuery(queryString)) {
       sendSettingsResponse(ctx, query, remoteAddr);
     } else if (queryString.replaceAll("/\\*.*\\*/", "").toLowerCase().trim().startsWith("set ")
-            && ! queryString.replaceAll("/\\*.*\\*/", "").toLowerCase().trim().startsWith("set @@execute_mode=")) {
+        && !queryString
+            .replaceAll("/\\*.*\\*/", "")
+            .toLowerCase()
+            .trim()
+            .startsWith("set @@execute_mode=")) {
       // ignore SET command
+      ctx.writeAndFlush(OkResponse.builder().sequenceId(query.getSequenceId() + 1).build());
+    } else if (queryString.equalsIgnoreCase("rollback")) {
       ctx.writeAndFlush(OkResponse.builder().sequenceId(query.getSequenceId() + 1).build());
     } else {
       // Generic response
@@ -547,6 +553,13 @@ public class MySqlListener implements AutoCloseable {
               newColumnDefinition(
                   ++sequenceId, fieldName, systemVariable, ColumnType.MYSQL_TYPE_LONGLONG, 12));
           values.add("1");
+          break;
+        case "transaction_isolation":
+          columnDefinitions.add(
+              newColumnDefinition(
+                  ++sequenceId, fieldName, systemVariable, ColumnType.MYSQL_TYPE_VAR_STRING, 63));
+          values.add("REPEATABLE-READ");
+          //          values.add("READ-UNCOMMITTED");
           break;
         default:
           System.err.println("[mysql-protocol] Unknown system variable: " + systemVariable);
