@@ -15,13 +15,14 @@
 3. [ADAPTED] SHOW FULL TABLES
    > Adapt `SHOW FULL TABLES` to `SHOW TABLES`
 4. [MOCKED] SELECT * FROM information_schema.routines WHERE routine_schema = 'demo_db' ORDER BY routine_name
-5. [NOT SUPPORTED] SHOW FULL COLUMNS FROM `demo_table1` FROM `demo_db`
+5. [MOCKED] SHOW FULL COLUMNS FROM `demo_table1` FROM `demo_db`
    ```
    # Field, Type, Collation, Null, Key, Default, Extra, Privileges, Comment
    name, varchar(255), utf8mb4_general_ci, YES, , , , select,insert,update,references,
    subject_id, int, , YES, , , , select,insert,update,references,
    ```
-6. [MOCKED] SELECT SPECIFIC_NAME, ROUTINE_TYPE, DTD_IDENTIFIER, IS_DETERMINISTIC, SQL_DATA_ACCESS, SECURITY_TYPE,
+6. [MOCKED] SHOW INDEX FROM `demo_table1`
+7. [MOCKED] SELECT SPECIFIC_NAME, ROUTINE_TYPE, DTD_IDENTIFIER, IS_DETERMINISTIC, SQL_DATA_ACCESS, SECURITY_TYPE,
    DEFINER FROM `information_schema`.`ROUTINES` WHERE `ROUTINE_SCHEMA` = 'demo_db'
 
 # sql execute when create
