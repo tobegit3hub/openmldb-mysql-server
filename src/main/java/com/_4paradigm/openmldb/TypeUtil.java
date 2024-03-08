@@ -153,10 +153,19 @@ public class TypeUtil {
     } else if (type.equals(DataType.kTypeDouble)) {
       return String.valueOf(resultSet.getDouble(i));
     } else if (type.equals(DataType.kTypeString)) {
+      if (resultSet.getString(i) == null) {
+        return null;
+      }
       return String.valueOf(resultSet.getString(i));
     } else if (type.equals(DataType.kTypeDate)) {
+      if (resultSet.getDate(i) == null) {
+        return null;
+      }
       return String.valueOf(resultSet.getDate(i));
     } else if (type.equals(DataType.kTypeTimestamp)) {
+      if (resultSet.getTimestamp(i) == null) {
+        return null;
+      }
       return String.valueOf(resultSet.getTimestamp(i));
     } else if (type.equals(DataType.kTypeUnknow)) {
       throw new SQLException("Not support type for " + type);

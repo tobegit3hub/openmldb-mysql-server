@@ -51,6 +51,7 @@ CREATE TABLE demo_table2(c1 string, c2 int, c3 bigint, c4 float, c5 double, c6 t
 INSERT INTO demo_table2(c1, c2, c3, c4, c5, c6) VALUES('01', 1, 1, 1.0, 1.0, 1709534741),('01', 2, 2, 2.0, 2.0, 1709534751),('01', 3, 3, 3.0, 3.0, 1709534761),('01', 4, 4, 4.0, 4.0, 1709534771);
 select * from demo_table2;
 SELECT c1, c2, sum(c3) OVER w1 AS w1_c3_sum FROM demo_table2 WINDOW w1 AS (PARTITION BY demo_table2.c1 ORDER BY demo_table2.c6 ROWS BETWEEN 2 PRECEDING AND CURRENT ROW);
+SELECT c1, c2, sum(c3) OVER w1 AS w1_c3_sum FROM demo_table2 WINDOW w1 AS (PARTITION BY demo_table2.c1 ORDER BY demo_table2.c6 ROWS_RANGE BETWEEN 1d PRECEDING AND CURRENT ROW);
 ```
 
 ## type testcase
